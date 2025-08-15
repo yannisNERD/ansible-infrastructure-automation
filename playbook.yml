@@ -1,0 +1,15 @@
+---
+- name: Automatisation de la sécurité des serveurs
+  hosts: all
+  gather_facts: yes
+  become: yes
+
+  tasks:
+    - name: Inclure les tâches d'accès SSH
+      include_tasks: tasks_ssh_access.yml
+
+    - name: Installer les paquets nécessaires
+      include_tasks: tasks_install_openscap.yml
+
+    - name: Effectuer l'analyse des vulnérabilités
+      include_tasks: tasks_vulnerability_scan_with_secadmin.yml
