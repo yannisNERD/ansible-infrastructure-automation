@@ -1,0 +1,18 @@
+---
+- name: Installer les paquets nécessaires pour OpenSCAP
+  apt:
+    name:
+      - libopenscap8
+      - wget
+      - bzip2
+    state: present
+  become: yes
+
+- name: Vérifier l'installation des paquets
+  command: "{{ item }} --version"
+  loop:
+    - oscap
+    - wget
+    - bunzip2
+  register: versions
+  changed_when: false
