@@ -1,0 +1,53 @@
+
+- name: Vérifier si l'utilisateur secadmin existe déjà
+  getent:
+    database: passwd
+    key: secadmin
+  register: user_exists
+  failed_when: false
+
+- name: Ajouter un utilisateur SSH sécurisé (secadmin)
+  user:
+    name: secadmin
+    groups: sudo
+    shell: /bin/bash
+    create_home: yes
+  when: user_exists.ansible_facts.getent_passwd.secadmin is not defined  # Vérifie si l'utilisateur secadmin n'existe pas
+
+- name: Copier la clé SSH pour secadmin
+  authorized_key:
+    user: secadmin
+    state: present
+    key: "{{ lookup('file', '/home/vagrant/.ssh/id_rsa.pub') }}"
+  when: user_exists.ansible_facts.getent_passwd.secadmin is defined  # Vérifie si l'utilisateur secadmin existe
+
+- name: Désactiver l'accès SSH pour root
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+  notify:
+    - restart_ssh
+  when: user_exists.ansible_facts.getent_passwd.secadmin is not defined  # Se déclenche uniquement si l'utilisateur secadmin n'existe pas
+
+- name: Limiter l'accès SSH à secadmin
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^AllowUsers'
+    line: 'AllowUsers secadmin'
+  notify:
+    - restart_ssh
+  when: user_exists.ansible_facts.getent_passwd.secadmin is not defined  # Se déclenche uniquement si l'utilisateur secadmin n'existe pas
+
+- name: Redémarrer le service SSH
+  service:
+    name: ssh
+    state: restarted
+  when: user_exists.ansible_facts.getent_passwd.secadmin is not defined  # Se déclenche uniquement si l'utilisateur secadmin n'existe pas
+
+# Commenté temporairement les handlers
+# handlers:
+#   - name: restart_ssh
+#     service:
+#       name: ssh
+#       state: restarted
